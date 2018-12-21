@@ -1,0 +1,9 @@
+[package]
+name = "evolutionary_pde"
+version = "0.1.0"
+authors = ["andy"]
+edition = "2018"
+
+[dependencies]
+evolutionary_geometry = { path = "../evolutionary_geometry" }
+evolutionary_algebra = { path = "../evolutionary_algebra" }

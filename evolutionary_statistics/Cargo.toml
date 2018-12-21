@@ -1,0 +1,7 @@
+[package]
+name = "evolutionary_statistics"
+version = "0.1.0"
+authors = ["andy"]
+edition = "2018"
+
+[dependencies]
