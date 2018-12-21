@@ -1,0 +1,14 @@
+[package]
+name = "evolutionary_math"
+version = "0.1.0"
+authors = ["andy"]
+edition = "2018"
+
+[dependencies]
+evolutionary_algebra = { path = "evolutionary_algebra" }
+evolutionary_analysis = { path = "evolutionary_analysis" }
+evolutionary_geometry = { path = "evolutionary_geometry" }
+evolutionary_statistics = { path = "evolutionary_statistics" }
+evolutionary_pde = { path = "evolutionary_pde" }
+evolutionary_ode = { path = "evolutionary_ode" }
+evolutionary_opt = { path = "evolutionary_opt" }
