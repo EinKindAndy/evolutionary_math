@@ -1,7 +1,7 @@
 extern crate num;
 
 use super::super::common::MatIndex;
-use num::Num;
+use num::{Num, Float};
 use std::collections::HashMap;
 use std::fmt::Display;
 
@@ -222,7 +222,7 @@ where T: Num + Clone + Copy + Display
         build_dense_matrix_v!(num , num , T::zero())
     }
 
-    pub fn eyes(num: usize) -> DenseMatrix<T> {
+    pub fn eye(num: usize) -> DenseMatrix<T> {
         let calc_elm = |i, j| {
             if i == j {
                 T::one()
@@ -233,5 +233,107 @@ where T: Num + Clone + Copy + Display
         };
         build_dense_matrix_f!(num , num , calc_elm)
     }
+
+    pub fn diag(&self) -> DenseMatrix<T> {
+        let calc_elm = |i, j| {
+            if i == j {
+                self.get_v(i, j)
+            }
+            else {
+                T::zero()
+            }
+        };
+        build_dense_matrix_f!(self.row_num , self.col_num , calc_elm)
+    }
+
+    pub fn tri_up(&self) -> DenseMatrix<T> {
+        let calc_elm = |i, j| {
+            if i <= j {
+                self.get_v(i, j)
+            }
+            else {
+                T::zero()
+            }
+        };
+        build_dense_matrix_f!(self.row_num , self.col_num , calc_elm)
+    }
+
+    pub fn tri_down(&self) -> DenseMatrix<T> {
+        let calc_elm = |i, j| {
+            if i >= j {
+                self.get_v(i, j)
+            }
+            else {
+                T::zero()
+            }
+        };
+        build_dense_matrix_f!(self.row_num , self.col_num , calc_elm)
+    }
 }
 
+impl<T> DenseMatrix<T> 
+where T: Float + Clone + Copy + Display
+{
+    pub fn cofactors(&self, row: usize, col: usize) -> DenseMatrix<T>
+    {
+        let row_num = self.row_num - 1;
+        let col_num = self.col_num - 1;
+        let calc_elm = |i, j| {
+            let ri = if i < row {
+                i
+            } else {
+                i + 1
+            };
+            let cj = if j < col {
+                j
+            } else {
+                j + 1
+            };
+            self.get_v(ri, cj)
+        };
+        build_dense_matrix_f!(row_num , col_num , calc_elm)
+    }
+
+    pub fn adjoint(&self) -> DenseMatrix<T>
+    {
+        let scalar = -T::one();
+        let calc_elm = |i, j| {
+            scalar.powi((i + j) as i32) * self.cofactors(i, j).det_adj()
+        };
+        build_dense_matrix_f!(self.row_num , self.col_num , calc_elm).t()
+    }
+
+    pub fn det_adj(&self) -> T
+    {
+        if self.row_num == self.col_num {
+            match self.row_num {
+                1 => self.get_v(0, 0),
+                2 => self.get_v(0, 0) * self.get_v(1, 1) - self.get_v(0, 1) * self.get_v(1, 0),
+                _ => {
+                    let mut sum = T::zero();
+                    let scalar = -T::one();
+                    for i in 0 .. self.row_num {
+                        sum = sum + scalar.powi(i as i32) * self.get_v(i, 0) * self.cofactors(i, 0).det_adj();
+                    }
+                    sum
+                }
+            }
+        }
+        else {
+            T::zero()
+        }
+    }
+
+    pub fn inv_adj(&self) -> Option<DenseMatrix<T>>
+    {
+        let det = self.det_adj();
+        if det.abs() == T::zero() {
+            None
+        }
+        else {
+            Some(
+                self.adjoint().scalar_mul(T::one() / det)
+            )
+        }
+    }
+}

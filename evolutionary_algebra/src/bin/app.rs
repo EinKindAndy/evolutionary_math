@@ -1,4 +1,4 @@
-
+use rand::prelude::*;
 use evolutionary_algebra::linear_algebra::matrix::dense::DenseMatrix;
 
 fn main() {
@@ -66,6 +66,9 @@ fn main() {
 
     let sevens = ones.scalar_mul(7.0);
     sevens.show();
+    sevens.diag().show();
+    sevens.tri_down().show();
+    sevens.tri_up().show();
 
     let mut matx = DenseMatrix::<f32>::new(6, 1);
     for i in 0 .. 6 {
@@ -80,13 +83,37 @@ fn main() {
     //let mat = matt.dot_multiply(&matx).unwrap();
     //mat.show();
 
-    let eyes = DenseMatrix::<f32>::eyes(5);
-    eyes.show();
+    let eye5 = DenseMatrix::<f32>::eye(5);
+    eye5.show();
 
     DenseMatrix::<f32>::ones(3).show();
 
     DenseMatrix::<f32>::zeros(1).show();
-    
+
+    let mut rmat = DenseMatrix::<f32>::new(6, 6);
+    for i in 0 .. 6 {
+        for j in 0 .. 6 {
+            rmat.set_v(i, j, rand::random::<f32>());
+        }
+    }
+    rmat.diag().show();
+    rmat.tri_up().show();
+    rmat.tri_down().show();
+    println!("");
+    rmat.cofactors(0, 0).show();
+    println!("");
+    rmat.cofactors(5, 5).show();
+    println!("");
+    rmat.cofactors(2, 2).show();
+    println!("{}", rmat.det_adj());
+    rmat.adjoint().show();
+    println!("");
+    rmat.show();
+    println!("");
+    let inv = rmat.inv_adj().unwrap();
+    inv.show();
+    println!("");
+    inv.dot_mul(&rmat).show();
     println!("Hello, world!");
 
 }
