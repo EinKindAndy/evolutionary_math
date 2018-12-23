@@ -142,6 +142,20 @@ where T: Num + Clone + Copy + Display
         build_dense_matrix_f!(self.row_num , self.col_num , |i, j|{ k * self.get_v(i, j) })
     }
 
+    pub fn concat(&self, mat: &DenseMatrix<T>) -> DenseMatrix<T> {
+        let row_num = self.row_num;
+        let col_num = self.col_num + mat.col_num;
+        let calc_elm = |i, j| {
+            if j < self.col_num {
+                self.get_v(i, j)
+            }
+            else {
+                mat.get_v(i, j - self.col_num)
+            }
+        };
+        build_dense_matrix_f!(row_num , col_num , calc_elm)
+    }
+
     pub fn dot_mul(&self, mat: &DenseMatrix<T>) -> DenseMatrix<T> {
         let row_num = self.row();
         let col_num = mat.col();
@@ -153,6 +167,13 @@ where T: Num + Clone + Copy + Display
             sum
         };
         build_dense_matrix_f!(row_num , col_num , calc_elm)
+    }
+
+    pub fn mul(&self, mat: &DenseMatrix<T>) -> DenseMatrix<T> {
+        let calc_elm = |i, j| {
+            self.get_v(i, j) * mat.get_v(i, j)
+        };
+        build_dense_matrix_f!(self.row_num , self.col_num , calc_elm)
     }
 
     pub fn safe_dot_mul(&self, mat: &DenseMatrix<T>) -> Option<DenseMatrix<T>>
@@ -246,7 +267,7 @@ where T: Num + Clone + Copy + Display
         build_dense_matrix_f!(self.row_num , self.col_num , calc_elm)
     }
 
-    pub fn tri_up(&self) -> DenseMatrix<T> {
+    pub fn tri_u(&self) -> DenseMatrix<T> {
         let calc_elm = |i, j| {
             if i <= j {
                 self.get_v(i, j)
@@ -258,7 +279,7 @@ where T: Num + Clone + Copy + Display
         build_dense_matrix_f!(self.row_num , self.col_num , calc_elm)
     }
 
-    pub fn tri_down(&self) -> DenseMatrix<T> {
+    pub fn tri_l(&self) -> DenseMatrix<T> {
         let calc_elm = |i, j| {
             if i >= j {
                 self.get_v(i, j)
@@ -269,6 +290,17 @@ where T: Num + Clone + Copy + Display
         };
         build_dense_matrix_f!(self.row_num , self.col_num , calc_elm)
     }
+
+    pub fn trace(&self) -> T {
+        let mut sum = T::zero();
+        let num = self.row_num.min(self.col_num);
+        for i in 0 .. num {
+            sum = sum + self.get_v(i, i);
+        }
+        sum
+    }
+
+    
 }
 
 impl<T> DenseMatrix<T> 
@@ -335,5 +367,70 @@ where T: Float + Clone + Copy + Display
                 self.adjoint().scalar_mul(T::one() / det)
             )
         }
+    }
+
+    pub fn norm2(&self) -> T {
+        self.t().dot_mul(&self).trace().sqrt()
+    }
+
+    #[allow(dead_code)]
+    fn permute_rows(&mut self, row_i: usize, row_j: usize) {
+        for col in 0 .. self.col_num {
+            let tmp = self.get_v(row_i, col);
+            self.set_v(row_i, col, self.get_v(row_j, col));
+            self.set_v(row_j, col, tmp);
+        }
+    }
+
+    #[allow(dead_code)]
+    fn pivoting(&mut self, site: usize) {
+        let mut tmp = self.get_v(site, site).abs();
+        let mut index = site;
+        for row in (site + 1) .. self.row_num {
+            if self.get_v(row, site).abs() > tmp {
+                tmp = self.get_v(row, site).abs();
+                index = row;
+            }
+        }
+        if index != site {
+            self.permute_rows(index, site)
+        }
+    }
+
+    pub fn solve_ge(mat_a: &DenseMatrix<T>, mat_b: &DenseMatrix<T>) -> Option<DenseMatrix<T>>
+    {
+        let mut mat = mat_a.concat(&mat_b);
+        for r in 0 .. mat.row_num {
+            mat.pivoting(r);
+            let head = mat.get_v(r, r);
+            if head == T::zero() {
+                return None;
+            }    
+            for c in r .. mat.col_num {
+                mat.set_v(r, c, mat.get_v(r, c) / head);
+            }
+            for nr in r + 1 .. mat.row_num {
+                let row_head = mat.get_v(nr, r);
+                for c in r .. mat.col_num {
+                    mat.set_v(nr, c, mat.get_v(nr, c) - row_head * mat.get_v(r, c));
+                }
+            }  
+        }
+
+        for r in (0 .. mat.row_num).rev() {
+            for nr in (0 .. r).rev() {
+                let row_head = mat.get_v(nr, r);
+                for c in r .. mat.col_num {
+                    mat.set_v(nr, c, mat.get_v(nr, c) - row_head * mat.get_v(r, c));
+                }
+            }
+        }
+
+        Some(mat.slice(0, mat.row_num - 1, mat_a.col_num, mat.col_num - 1))
+    }
+
+    pub fn inv_ge(&self) -> Option<DenseMatrix<T>>
+    {
+        Self::solve_ge(&self, &Self::eye(self.row_num))
     }
 }

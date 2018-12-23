@@ -35,19 +35,15 @@ fn main() {
     twos.add(&threes).slice(1, 4, 2, 3).show();
 
     threes.show();
-    for i in 0 .. threes.row() {
-        for j in 0 .. threes.col() {
-            print!("{} ", threes.get_v(i, j));
-        }
-        println!("");
-    }
 
     let negones = ones.sub(&twos);
     negones.show();
-    //negones.neg().show();
+    negones.neg().show();
     threes.show();
     twos.show();
     ones.show();
+
+    ones.concat(&twos).show();
 
     let mut mat = DenseMatrix::<f32>::new(3, 4);
     for i in 0 .. 3 {
@@ -61,27 +57,21 @@ fn main() {
     let matt = mat.t();
     matt.show();
 
-    //mat.t_mut();
-    //mat.show();
-
     let sevens = ones.scalar_mul(7.0);
     sevens.show();
     sevens.diag().show();
-    sevens.tri_down().show();
-    sevens.tri_up().show();
+    sevens.tri_l().show();
+    sevens.tri_u().show();
 
-    let mut matx = DenseMatrix::<f32>::new(6, 1);
-    for i in 0 .. 6 {
-        matx.set_v(i, 0, i as f32)
+    let nr = 15;
+    let mut matx = DenseMatrix::<f32>::new(nr, 1);
+    for i in 0 .. nr {
+        matx.set_v(i, 0, (i + 1) as f32)
     }
     matx.show();
 
-    //println!("{}", f32::default());
-
     let matb = ones.dot_mul(&matx);
     matb.show();
-    //let mat = matt.dot_multiply(&matx).unwrap();
-    //mat.show();
 
     let eye5 = DenseMatrix::<f32>::eye(5);
     eye5.show();
@@ -90,30 +80,52 @@ fn main() {
 
     DenseMatrix::<f32>::zeros(1).show();
 
-    let mut rmat = DenseMatrix::<f32>::new(6, 6);
-    for i in 0 .. 6 {
-        for j in 0 .. 6 {
+    let mut rmat = DenseMatrix::<f32>::new(nr, nr);
+    for i in 0 .. nr {
+        for j in 0 .. nr {
             rmat.set_v(i, j, rand::random::<f32>());
         }
     }
+
+    println!("A =");
+    rmat.show();
+    let bmat = rmat.dot_mul(&matx);
+    println!("b =");
+    bmat.show();
+    println!("real x is");
+    matx.show();
+    let xmat = DenseMatrix::solve_ge(&rmat, &bmat).unwrap();
+    println!("calculated by GE x_ is");
+    xmat.show();
+    println!("A * x_ is");
+    rmat.dot_mul(&xmat).show();
+    println!("A * x_ - x is");
+    xmat.sub(&matx).show();
+    println!("||A * x_ - x|| is");
+    println!("{}", xmat.sub(&matx).norm2());
+
     rmat.diag().show();
-    rmat.tri_up().show();
-    rmat.tri_down().show();
+    rmat.tri_u().show();
+    rmat.tri_l().show();
     println!("");
     rmat.cofactors(0, 0).show();
     println!("");
     rmat.cofactors(5, 5).show();
     println!("");
     rmat.cofactors(2, 2).show();
-    println!("{}", rmat.det_adj());
-    rmat.adjoint().show();
+    
     println!("");
-    rmat.show();
+    //Not recommand: cramer or calculated by adjoint matrix
+    //println!("{}", rmat.det_adj());
+    //rmat.adjoint().show();
+    //println!("inverse by adjoint matrix");
+    //let inv = rmat.inv_adj().unwrap();
+    //inv.show();
+    println!("inverse by GE");
+    rmat.inv_ge().unwrap().show();
     println!("");
-    let inv = rmat.inv_adj().unwrap();
-    inv.show();
-    println!("");
-    inv.dot_mul(&rmat).show();
+    rmat.inv_ge().unwrap().dot_mul(&rmat).show();
+    println!("{}", rmat.inv_ge().unwrap().dot_mul(&rmat).norm2());
     println!("Hello, world!");
 
 }
