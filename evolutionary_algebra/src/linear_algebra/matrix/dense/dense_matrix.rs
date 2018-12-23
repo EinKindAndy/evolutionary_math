@@ -383,7 +383,7 @@ where T: Float + Clone + Copy + Display
     }
 
     #[allow(dead_code)]
-    fn pivoting(&mut self, site: usize) {
+    fn pivoting(&mut self, site: usize) -> i32 {
         let mut tmp = self.get_v(site, site).abs();
         let mut index = site;
         for row in (site + 1) .. self.row_num {
@@ -393,8 +393,10 @@ where T: Float + Clone + Copy + Display
             }
         }
         if index != site {
-            self.permute_rows(index, site)
+            self.permute_rows(index, site);
+            return 1;
         }
+        return 0;
     }
 
     pub fn solve_ge(mat_a: &DenseMatrix<T>, mat_b: &DenseMatrix<T>) -> Option<DenseMatrix<T>>
@@ -432,5 +434,28 @@ where T: Float + Clone + Copy + Display
     pub fn inv_ge(&self) -> Option<DenseMatrix<T>>
     {
         Self::solve_ge(&self, &Self::eye(self.row_num))
+    }
+
+    pub fn det_ge(&self) -> T {
+        let mut mat = self.scalar_mul(T::one());
+        let mut count = 0;
+        for r in 0 .. mat.row_num {
+            count += mat.pivoting(r);
+            let head = mat.get_v(r, r);
+            if head == T::zero() {
+                return T::zero();
+            }    
+            for nr in r + 1 .. mat.row_num {
+                let row_head = mat.get_v(nr, r) / head;
+                for c in r .. mat.col_num {
+                    mat.set_v(nr, c, mat.get_v(nr, c) - row_head * mat.get_v(r, c));
+                }
+            }  
+        }
+        let mut product = T::one();
+        for i in 0 .. self.row_num {
+            product = product * mat.get_v(i, i);
+        }
+        (-T::one()).powi(count) * product
     }
 }
