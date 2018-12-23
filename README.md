@@ -19,7 +19,7 @@ fn main() {
 
     DenseMatrix::<f32>::zeros(1).show();
 
-    //Not recommand: cramer's rule or calculated by adjoint matrix
+    //Not recommend: cramer's rule or calculated by the adjoint matrix
     let cnr = 7;
     let mut cmat = DenseMatrix::<f32>::new(cnr, cnr);
     for i in 0 .. cnr {
