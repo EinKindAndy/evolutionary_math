@@ -10,6 +10,7 @@ It's a tiny project to practice my rust programming skills. I hope to learn some
 //operations of dense matrices at the current stage
 use rand::prelude::*;
 use evolutionary_algebra::linear_algebra::matrix::dense::DenseMatrix;
+use evolutionary_algebra::linear_algebra::matrix::sparse::SparseMatrix;
 
 fn main() {
     
@@ -19,7 +20,7 @@ fn main() {
 
     DenseMatrix::<f32>::zeros(1).show();
 
-    //Not recommend: cramer's rule or calculated by the adjoint matrix
+    //Not recommand: cramer's rule or calculated by adjoint matrix
     let cnr = 7;
     let mut cmat = DenseMatrix::<f32>::new(cnr, cnr);
     for i in 0 .. cnr {
@@ -73,7 +74,71 @@ fn main() {
     println!("trace(inv(A) * A)  by GE is {}", rmat.inv_ge().unwrap().dot_mul(&rmat).trace());
     println!("Hello, world!");
 
-}
+    SparseMatrix::<f32>::eye(5).show();
+
+    SparseMatrix::<f32>::ones(3).show();
+
+    SparseMatrix::<f32>::zeros(1).show();
+
+    //Not recommand: cramer's rule or calculated by adjoint matrix
+    let snr = 7;
+    let mut smat = SparseMatrix::<f32>::new(snr, snr);
+    for i in 0 .. snr {
+        for j in 0 .. snr {
+            smat.set_v(i, j, rand::random::<f32>());
+        }
+    }
+    smat.diag().show();
+    smat.tri_u().show();
+    smat.tri_l().show();
+    println!("the cofactor when the indices are (0, 0)");
+    smat.cofactors(0, 0).show();
+    println!("the cofactor when the indices are (5, 5)");
+    smat.cofactors(5, 5).show();
+    println!("the cofactor when the indices are (2, 2)");
+    smat.cofactors(2, 2).show();
+    println!("adjoint(A) is ");
+    smat.adjoint().show();
+    println!("det(A) is {} by cramer's rule", smat.det_adj());
+    println!("det(A) is {} by GE", smat.det_ge());
+    println!("inverse(A) by adjoint matrix");
+    smat.inv_adj().unwrap().show();
+    println!("inverse(A) by GE");
+    smat.inv_ge().unwrap().show();
+
+    let sr = 10; // = 100;
+    let mut smatx = SparseMatrix::<f32>::new(sr, 1);
+    for i in 0 .. nr {
+        smatx.set_v(i, 0, (i + 1) as f32)
+    }
+
+    let mut srmat = SparseMatrix::<f32>::new(nr, nr);
+    for i in 0 .. nr {
+        for j in 0 .. nr {
+            srmat.set_v(i, j, rand::random::<f32>());
+        }
+    }
+    // make it diagonally dominant to test the SOR method!
+    srmat = srmat.add(&SparseMatrix::eye(nr).scalar_mul(5.5));
+    println!("A =");
+    srmat.show();
+    let sbmat = srmat.dot_mul(&smatx);
+    println!("b =");
+    sbmat.show();
+    println!("real x is");
+    smatx.show();
+    let sxmat = SparseMatrix::solve_ge(&srmat, &sbmat).unwrap();
+    println!("x_ calculated by GE is");
+    sxmat.show();
+    println!("x_ calculated by SOR is");
+    let sor_x = SparseMatrix::solve_sor(&srmat, &sbmat, 1.1, 30);
+    sor_x.show();
+    println!("(GE) ||A * x_ - x|| is");
+    println!("{}", sxmat.sub(&smatx).norm2());
+    println!("(SOR) ||A * x_ - x|| is");
+    println!("{}", sor_x.sub(&smatx).norm2());
+
+    println!("trace(inv(A) * A)  by GE is {}", srmat.inv_ge().unwrap().dot_mul(&srmat).trace());
 ```
 ## evolutionary_geometry
 ### euclidean
