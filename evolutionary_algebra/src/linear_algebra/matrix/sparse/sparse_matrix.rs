@@ -401,14 +401,41 @@ where T: Float + Clone + Copy + Display
     {
         // Note that 0 < w < 2 !!!
         let mut xmat = Self::new(mat_a.row_num, mat_b.col_num);
-        let mat_d = mat_a.diag();
-        let mat_e = mat_a.tri_strict_l().scalar_mul(-T::one());
-        let mat_f = mat_a.tri_strict_u().scalar_mul(-T::one());
+        let mat_a_ = mat_a.t().dot_mul(&mat_a);
+        let mat_b_ = mat_a.t().dot_mul(&mat_b);
+        let mat_d = mat_a_.diag();
+        let mat_e = mat_a_.tri_strict_l().scalar_mul(-T::one());
+        let mat_f = mat_a_.tri_strict_u().scalar_mul(-T::one());
         let mat_m = mat_d.sub(&mat_e.mul_scalar_f(w_param)).inv_ge().unwrap();
         let b = mat_m.dot_mul(&mat_d.mul_scalar_f(T::one() - w_param).add(&mat_f.mul_scalar_f(w_param)));
-        let c = mat_m.dot_mul(&mat_b);
+        let c = mat_m.dot_mul(&mat_b_.mul_scalar_f(w_param));
         for _ in 0 .. max_it {
             xmat = b.dot_mul(&xmat).add(&c);
+        }
+        xmat
+    }
+
+    pub fn solve_cg(mat_a: &SparseMatrix<T>, mat_b: &SparseMatrix<T>, max_it: usize) -> SparseMatrix<T>
+    {
+        // Note that 0 < w < 2 !!!
+        let mut xmat = Self::new(mat_a.row_num, mat_b.col_num);
+        let mut r = mat_b.sub(&mat_a.dot_mul(&xmat));
+        let mut s = mat_a.t().dot_mul(&r);
+        let mut p = s.mul_scalar_f(T::one());
+        let mut sts = s.t().dot_mul(&s).get_v(0, 0);
+        for _ in 0 .. max_it {
+            let q = mat_a.dot_mul(&p);
+            let alpha = sts / q.t().dot_mul(&q).get_v(0, 0);
+            xmat = xmat.add(&p.mul_scalar_f(alpha));
+            r = r.sub(&q.mul_scalar_f(alpha));
+            s = mat_a.t().dot_mul(&r);
+            let sts_ = sts;
+            if sts_ == T::zero() {
+                break;
+            }
+            sts = s.t().dot_mul(&s).get_v(0, 0);
+            let beta = sts / sts_;
+            p = s.add(&p.mul_scalar_f(beta));
         }
         xmat
     }

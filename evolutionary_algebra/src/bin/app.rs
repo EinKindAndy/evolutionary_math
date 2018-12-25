@@ -98,18 +98,18 @@ fn main() {
 
     let sr = 10; // = 100;
     let mut smatx = SparseMatrix::<f32>::new(sr, 1);
-    for i in 0 .. nr {
+    for i in 0 .. sr {
         smatx.set_v(i, 0, (i + 1) as f32)
     }
 
-    let mut srmat = SparseMatrix::<f32>::new(nr, nr);
-    for i in 0 .. nr {
-        for j in 0 .. nr {
+    let mut srmat = SparseMatrix::<f32>::new(sr, sr);
+    for i in 0 .. sr {
+        for j in 0 .. sr {
             srmat.set_v(i, j, rand::random::<f32>());
         }
     }
     // make it diagonally dominant to test the SOR method!
-    srmat = srmat.add(&SparseMatrix::eye(nr).scalar_mul(5.5));
+    srmat = srmat.add(&SparseMatrix::eye(sr).scalar_mul(2.0 * sr as f32));
     println!("A =");
     srmat.show();
     let sbmat = srmat.dot_mul(&smatx);
@@ -121,13 +121,17 @@ fn main() {
     println!("x_ calculated by GE is");
     sxmat.show();
     println!("x_ calculated by SOR is");
-    let sor_x = SparseMatrix::solve_sor(&srmat, &sbmat, 1.1, 30);
+    let sor_x = SparseMatrix::solve_sor(&srmat, &sbmat, 0.95, 10);
     sor_x.show();
+    println!("x_ calculated by CG is");
+    let cg_x = SparseMatrix::solve_cg(&srmat, &sbmat, 50);
+    cg_x.show();
     println!("(GE) ||A * x_ - x|| is");
     println!("{}", sxmat.sub(&smatx).norm2());
     println!("(SOR) ||A * x_ - x|| is");
     println!("{}", sor_x.sub(&smatx).norm2());
-
+    println!("(CG) ||A * x_ - x|| is");
+    println!("{}", cg_x.sub(&smatx).norm2());
     println!("trace(inv(A) * A)  by GE is {}", srmat.inv_ge().unwrap().dot_mul(&srmat).trace());
 
 }
