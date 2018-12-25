@@ -96,7 +96,7 @@ fn main() {
     println!("inverse(A) by GE");
     smat.inv_ge().unwrap().show();
 
-    let sr = 10; // = 100;
+    let sr = 100; // = 100;
     let mut smatx = SparseMatrix::<f32>::new(sr, 1);
     for i in 0 .. sr {
         smatx.set_v(i, 0, (i + 1) as f32)
@@ -123,15 +123,15 @@ fn main() {
     println!("x_ calculated by SOR is");
     let sor_x = SparseMatrix::solve_sor(&srmat, &sbmat, 0.95, 10);
     sor_x.show();
-    println!("x_ calculated by CG is");
-    let cg_x = SparseMatrix::solve_cg(&srmat, &sbmat, 50);
-    cg_x.show();
+    println!("x_ calculated by GMRES is");
+    let gmres_x = SparseMatrix::solve_gmres(&srmat, &sbmat, 5, 100);
+    gmres_x.show();
     println!("(GE) ||A * x_ - x|| is");
     println!("{}", sxmat.sub(&smatx).norm2());
     println!("(SOR) ||A * x_ - x|| is");
     println!("{}", sor_x.sub(&smatx).norm2());
-    println!("(CG) ||A * x_ - x|| is");
-    println!("{}", cg_x.sub(&smatx).norm2());
+    println!("(GMRES) ||A * x_ - x|| is");
+    println!("{}", gmres_x.sub(&smatx).norm2());
     println!("trace(inv(A) * A)  by GE is {}", srmat.inv_ge().unwrap().dot_mul(&srmat).trace());
 
 }

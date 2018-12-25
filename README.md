@@ -3,8 +3,10 @@ It's a tiny project to practice my rust programming skills. I hope to learn some
 
 ## evolutionary_algebra
 ### linear_algebra
-#### matrix
-##### dense
+#### the dense matrix and the sparse matrix and solvers for linear systems
+It's well known that the matrix computation to solve a linear system plays an important role in almost all numerical regions, as at the final stage, the normal form of Ax=b represents the initial mathematical model. Sometimes, it's approximating the nonlinear linearly. Or it's a real relation between variables.
+In practical problems, the matrix is huge but sparse, so we usually store it in a sparse way. And different problems have different suitable solvers respectively.
+Direct methods are more stable and accurate in terms of the smaller matrix. The iterative method is usually the only choice for huge sparse matrix solving. Sometimes, it's good that the matrix is hermitian and defined. However, sometimes, it's not! There is no special method that is well performed in all situations. Hence, beyond the direct method, we have some stationary iterative methods (to recommend SOR) when matrices are diagonally dominant, and some Krylov-based methods (GMRES or GCR and their variants) for more general cases.
 ```
 //baisc matrix operations
 //operations of dense matrices at the current stage
@@ -106,7 +108,7 @@ fn main() {
     println!("inverse(A) by GE");
     smat.inv_ge().unwrap().show();
 
-    let sr = 10; // = 100;
+    let sr = 100; // = 100;
     let mut smatx = SparseMatrix::<f32>::new(sr, 1);
     for i in 0 .. sr {
         smatx.set_v(i, 0, (i + 1) as f32)
@@ -133,15 +135,15 @@ fn main() {
     println!("x_ calculated by SOR is");
     let sor_x = SparseMatrix::solve_sor(&srmat, &sbmat, 0.95, 10);
     sor_x.show();
-    println!("x_ calculated by CG is");
-    let cg_x = SparseMatrix::solve_cg(&srmat, &sbmat, 50);
-    cg_x.show();
+    println!("x_ calculated by GMRES is");
+    let gmres_x = SparseMatrix::solve_gmres(&srmat, &sbmat, 5, 100);
+    gmres_x.show();
     println!("(GE) ||A * x_ - x|| is");
     println!("{}", sxmat.sub(&smatx).norm2());
     println!("(SOR) ||A * x_ - x|| is");
     println!("{}", sor_x.sub(&smatx).norm2());
-    println!("(CG) ||A * x_ - x|| is");
-    println!("{}", cg_x.sub(&smatx).norm2());
+    println!("(GMRES) ||A * x_ - x|| is");
+    println!("{}", gmres_x.sub(&smatx).norm2());
     println!("trace(inv(A) * A)  by GE is {}", srmat.inv_ge().unwrap().dot_mul(&srmat).trace());
 
 }

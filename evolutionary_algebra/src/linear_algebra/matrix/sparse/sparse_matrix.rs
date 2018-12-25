@@ -335,6 +335,16 @@ where T: Float + Clone + Copy + Display
         self.t().dot_mul(&self).trace().sqrt()
     }
 
+    pub fn get_col(&self, col_id: usize) -> SparseMatrix<T>
+    {
+        self.slice(0, self.row_num - 1, col_id, col_id)
+    }
+
+    pub fn get_row(&self, row_id: usize) -> SparseMatrix<T>
+    {
+        self.slice(row_id, row_id, 0, self.col_num - 1)
+    }
+
     #[allow(dead_code)]
     fn permute_rows(&mut self, row_i: usize, row_j: usize) {
         for col in 0 .. self.col_num {
@@ -393,8 +403,39 @@ where T: Float + Clone + Copy + Display
         Some(mat.slice(0, mat.row_num - 1, mat_a.col_num, mat.col_num - 1))
     }
 
+    #[allow(dead_code)]
     fn mul_scalar_f(&self, k: T) -> SparseMatrix<T> {
         build_sparse_matrix_f!(self.row_num , self.col_num , |i, j|{ k * self.get_v(i, j) })
+    }
+
+    #[allow(dead_code)]
+    fn normal(&self) -> SparseMatrix<T> {
+        let scalar = self.norm2();
+        self.mul_scalar_f(T::one() / (scalar * scalar))
+    }
+
+    #[allow(dead_code)]
+    fn inner_product(vec1: &SparseMatrix<T>, vec2: &SparseMatrix<T>) -> T {
+        vec1.dot_mul(&vec2).get_v(0, 0)
+    }
+
+    #[allow(dead_code)]
+    fn arnoldi_proc(m: usize, mat_a: &SparseMatrix<T>,
+                    mat_v: &mut SparseMatrix<T>, mat_h: &mut SparseMatrix<T>) {
+        for j in 0 .. m {
+            let mut v_j_plus = mat_a.dot_mul(&mat_v.get_col(j));
+            for i in 0 .. j {
+                let h_ij = Self::inner_product(&mat_v.get_col(i).t(), &mat_a.dot_mul(&mat_v.get_col(j)));
+                mat_h.set_v(i, j, h_ij);
+                v_j_plus = v_j_plus.sub(&mat_v.get_col(i).mul_scalar_f(h_ij));
+            }
+            let h_j_plus = v_j_plus.norm2();
+            mat_h.set_v(j+1, j, h_j_plus);
+            v_j_plus = v_j_plus.mul_scalar_f(T::one() / h_j_plus);
+            for i in 0 .. v_j_plus.row_num {
+                mat_v.set_v(i, j+1, v_j_plus.get_v(i, 0));
+            }
+        }
     }
 
     pub fn solve_sor(mat_a: &SparseMatrix<T>, mat_b: &SparseMatrix<T>, w_param: T, max_it: usize) -> SparseMatrix<T>
@@ -415,27 +456,32 @@ where T: Float + Clone + Copy + Display
         xmat
     }
 
-    pub fn solve_cg(mat_a: &SparseMatrix<T>, mat_b: &SparseMatrix<T>, max_it: usize) -> SparseMatrix<T>
+    pub fn solve_gmres(mat_a: &SparseMatrix<T>, mat_b: &SparseMatrix<T>, m:usize, max_it: usize) -> SparseMatrix<T>
     {
-        // Note that 0 < w < 2 !!!
         let mut xmat = Self::new(mat_a.row_num, mat_b.col_num);
         let mut r = mat_b.sub(&mat_a.dot_mul(&xmat));
-        let mut s = mat_a.t().dot_mul(&r);
-        let mut p = s.mul_scalar_f(T::one());
-        let mut sts = s.t().dot_mul(&s).get_v(0, 0);
+        let mut beta = r.norm2();
+        let mut v1 = r.normal();
         for _ in 0 .. max_it {
-            let q = mat_a.dot_mul(&p);
-            let alpha = sts / q.t().dot_mul(&q).get_v(0, 0);
-            xmat = xmat.add(&p.mul_scalar_f(alpha));
-            r = r.sub(&q.mul_scalar_f(alpha));
-            s = mat_a.t().dot_mul(&r);
-            let sts_ = sts;
-            if sts_ == T::zero() {
+            let mut mat_v = Self::new(v1.row_num, m+1);
+            for i in 0 .. v1.row_num {
+                mat_v.set_v(i, 0, v1.get_v(i, 0));
+            }
+            let mut mat_h = Self::new(m+1, m);
+            //Self::arnoldi_proc(m, &mat_a.t().dot_mul(&mat_a), &mut mat_v, &mut mat_h);
+            Self::arnoldi_proc(m, &mat_a, &mut mat_v, &mut mat_h);
+            let mut e = Self::new(m, 1);
+            e.set_v(0, 0, beta);
+            match Self::solve_ge(&mat_h.slice(0, m-1, 0, m-1), &e) {
+                Some(y) => xmat = xmat.add(&mat_v.slice(0, mat_v.row() - 1, 0, m-1).dot_mul(&y)),
+                None => break,
+            }
+            r = mat_b.sub(&mat_a.dot_mul(&xmat));
+            beta = r.norm2();
+            if beta == T::zero() {
                 break;
             }
-            sts = s.t().dot_mul(&s).get_v(0, 0);
-            let beta = sts / sts_;
-            p = s.add(&p.mul_scalar_f(beta));
+            v1 = r.normal();
         }
         xmat
     }
