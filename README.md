@@ -5,8 +5,8 @@ It's a tiny project to practice my rust programming skills. I hope to learn some
 ### linear_algebra
 #### the dense matrix and the sparse matrix and solvers for linear systems
 It's well known that the matrix computation to solve a linear system plays an important role in almost all numerical regions, as at the final stage, the normal form of Ax=b represents the initial mathematical model. Sometimes, it's approximating the nonlinear linearly. Or it's a real relation between variables.
-In practical problems, the matrix is huge but sparse, so we usually store it in a sparse way. And different problems have different suitable solvers respectively.
-Direct methods are more stable and accurate in terms of the smaller matrix. The iterative method is usually the only choice for huge sparse matrix solving. Sometimes, it's good that the matrix is hermitian and defined. However, sometimes, it's not! There is no special method that is well performed in all situations. Hence, beyond the direct method, we have some stationary iterative methods (to recommend SOR) when matrices are diagonally dominant, and some Krylov-based methods (GMRES or GCR and their variants) for more general cases.
+In practical problems, the matrix is large but sparse, so we usually store it in a sparse way. And different problems have different suitable solvers respectively.
+Direct methods are more stable and accurate in terms of the smaller matrix. The iterative method is usually the only choice for large sparse matrix solving. Sometimes, it's good that the matrix is hermitian and defined. However, sometimes, it's not! There is no special method that is well performed in all situations. Hence, beyond the direct method, we have some stationary iterative methods (to recommend SOR) when matrices are diagonally dominant, and some Krylov-based methods (GMRES or GCR and their variants) for more general cases.
 ```
 //baisc matrix operations
 //operations of dense matrices at the current stage
